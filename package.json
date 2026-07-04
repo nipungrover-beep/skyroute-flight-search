@@ -1,0 +1,25 @@
+{
+  "name": "flight-search-poc",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Domestic flight search POC app (React + Express + SQLite) used as a target for test automation.",
+  "workspaces": [
+    "client",
+    "server",
+    "e2e"
+  ],
+  "scripts": {
+    "dev": "concurrently -n SERVER,CLIENT -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "seed": "npm run seed -w server",
+    "build": "npm run build -w client",
+    "test": "npm test -w server",
+    "test:e2e": "npm test -w e2e",
+    "test:e2e:smoke": "npm run test:smoke -w e2e",
+    "test:e2e:regression": "npm run test:regression -w e2e"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
