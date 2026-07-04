@@ -70,7 +70,13 @@ Drives the **actual running app** at `http://localhost:5173` with Playwright —
 - `tests/regression/empty-state.*` — the `GOI → IXC` no-results route, and filtering an existing result set down to zero.
 - `tests/regression/navigation.*` — deep-linking straight to `/results?...`, and browser back-button behavior after searching again from the results page.
 
-Results: `npm run test:e2e` prints a live pass/fail list in the terminal and writes an interactive HTML report to `e2e/html-report/` (open `index.html`, or run `npm run report -w e2e`). Failure runs also capture a screenshot and a Playwright trace under `e2e/test-results/artifacts/`.
+Results: `npm run test:e2e` prints a live pass/fail list in the terminal and writes an interactive HTML report to `e2e/html-report/` (open `index.html`, or run `npm run report -w e2e`). Every test — pass or fail — captures a screenshot (`use.screenshot: 'on'`); failures also get a Playwright trace. Artifacts live under `e2e/test-results/`.
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push/PR to `main`: one job runs the backend API suite (`npm test`), a second installs Chromium and runs the full Playwright suite (`npm run test:e2e`) against a freshly-started `npm run dev` (same `webServer` config used locally — verified it cold-starts and tears itself down cleanly, matching a CI runner). Both jobs upload their HTML reports as build artifacts regardless of outcome, so a failed run's screenshots/traces are still downloadable from the Actions tab.
+
+This repo was git-initialized locally but has no remote configured — push it to a GitHub repo of your own to see CI run.
 
 ## API
 
