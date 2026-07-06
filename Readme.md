@@ -69,6 +69,22 @@ This app has no external data warehouse, but `server/src/seed/` is a genuine lit
 - **Transform** — `addMinutes()` clock arithmetic is correct, including midnight rollover (e.g. `21:15 + 165min → 00:00`); every flight's `arriveTime` matches its own `departTime` + duration; basic data-quality checks (positive prices/seats/durations, business fare costs more than economy).
 - **Load** — `seedDatabase()` inserts exactly the source row counts; every flight's `from`/`to` airport code actually exists (no orphaned foreign keys); re-running the seed is idempotent (no duplicate/accumulating rows); the intentionally-unseeded `GOI ↔ IXC` route stays empty (protects the empty-results fixture used elsewhere).
 
+### Boundary value & wildcard search tests
+
+```powershell
+npm run test:boundary
+```
+
+`server/tests/boundary/` — edge-of-range and pattern-matching coverage across every endpoint, run via `npm run test:boundary` (also included in the full `npm test`):
+
+- `passengers.boundary.test.js` — the valid range `1`–`9` at every edge (`0`, `1`, `9`, `10`, `-1`, non-numeric) across `/api/flights`, `/availability`, and `/confirm`.
+- `date.boundary.test.js` — yesterday/today/tomorrow around the "no past dates" boundary, missing leading zeros, and calendar-validity edges (month 13, day 45, Feb 30, Feb 29 on leap vs. non-leap years — computed dynamically so the test never rots).
+- `price-filter.boundary.test.js` — `minPrice`/`maxPrice` exactly at, one above, and one below each seeded flight's price; `minPrice === maxPrice`; an inverted range.
+- `flight-id.boundary.test.js` — `0`, `-1`, non-numeric, and decimal ids across `/availability`, `/fares`, `/seatmap`, `/confirm`, plus the lowest/highest seeded id and one past it.
+- `airport-search.wildcard.test.js` — the autocomplete's partial matching: empty/whitespace query, single character, code-prefix-only vs. city/name-substring-anywhere, case-insensitivity, no-match, an oversized query, and a SQL-injection-shaped string (proven harmless — the query is a JS array filter, not raw SQL).
+
+Two real bugs were found and fixed this way — see [BUG_AUDIT.md](BUG_AUDIT.md) for the full root-cause writeups.
+
 ### End-to-end (browser) tests
 
 ```powershell
@@ -90,7 +106,7 @@ Results: `npm run test:e2e` prints a live pass/fail list in the terminal and wri
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push/PR to `main`: one job runs the backend suite (`npm test` — regression + ETL together), a second installs Chromium and runs the full Playwright suite (`npm run test:e2e`) against a freshly-started `npm run dev` (same `webServer` config used locally — verified it cold-starts and tears itself down cleanly, matching a CI runner). Both jobs upload their HTML reports as build artifacts regardless of outcome, so a failed run's screenshots/traces are still downloadable from the Actions tab.
+`.github/workflows/ci.yml` runs on every push/PR to `main`: one job runs the backend suite (`npm test` — regression + ETL + boundary/wildcard together), a second installs Chromium and runs the full Playwright suite (`npm run test:e2e`) against a freshly-started `npm run dev` (same `webServer` config used locally — verified it cold-starts and tears itself down cleanly, matching a CI runner). Both jobs upload their HTML reports as build artifacts regardless of outcome, so a failed run's screenshots/traces are still downloadable from the Actions tab.
 
 This repo was git-initialized locally but has no remote configured — push it to a GitHub repo of your own to see CI run.
 

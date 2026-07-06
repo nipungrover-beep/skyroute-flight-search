@@ -36,9 +36,23 @@ function todayIso() {
   return `${y}-${m}-${d}`;
 }
 
+// Number.parseInt(...) || 1 would silently coerce an explicit "0" to 1 (0 is
+// falsy), letting passengers=0 slip past the < 1 boundary check below. Only
+// missing/non-numeric input should default to 1.
+function parsePassengers(value) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? 1 : parsed;
+}
+
+function isValidCalendarDate(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d;
+}
+
 flightsRouter.get('/', (req, res) => {
   const { from, to, date } = req.query;
-  const passengers = Number.parseInt(req.query.passengers, 10) || 1;
+  const passengers = parsePassengers(req.query.passengers);
   const travelClass = req.query.travelClass === 'BUSINESS' ? 'BUSINESS' : 'ECONOMY';
 
   if (!from || !to || !date) {
@@ -47,6 +61,10 @@ flightsRouter.get('/', (req, res) => {
 
   if (!DATE_RE.test(date)) {
     return res.status(400).json({ error: 'date must be in YYYY-MM-DD format' });
+  }
+
+  if (!isValidCalendarDate(date)) {
+    return res.status(400).json({ error: 'date is not a valid calendar date' });
   }
 
   if (date < todayIso()) {
@@ -152,7 +170,7 @@ flightsRouter.get('/:id/availability', (req, res) => {
     return res.status(400).json({ error: 'Invalid flight id' });
   }
 
-  const passengers = Number.parseInt(req.query.passengers, 10) || 1;
+  const passengers = parsePassengers(req.query.passengers);
   if (passengers < 1 || passengers > 9) {
     return res.status(400).json({ error: 'passengers must be between 1 and 9' });
   }
@@ -238,7 +256,7 @@ flightsRouter.get('/:id/confirm', (req, res) => {
     return res.status(400).json({ error: 'fareId and seatId are required query parameters' });
   }
 
-  const passengers = Number.parseInt(req.query.passengers, 10) || 1;
+  const passengers = parsePassengers(req.query.passengers);
   if (passengers < 1 || passengers > 9) {
     return res.status(400).json({ error: 'passengers must be between 1 and 9' });
   }
