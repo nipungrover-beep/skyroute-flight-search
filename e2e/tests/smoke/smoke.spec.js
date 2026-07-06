@@ -36,4 +36,32 @@ test.describe('smoke', () => {
     const body = await res.json();
     expect(body.status).toBe('ok');
   });
+
+  test('can select a fare and seat and reach a confirmation', async ({ page }) => {
+    const consoleErrors = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') consoleErrors.push(msg.text());
+    });
+    page.on('pageerror', (err) => consoleErrors.push(String(err)));
+
+    await page.goto('/');
+    await pickAirport(page, 'from', 'Delhi', 'DEL');
+    await pickAirport(page, 'to', 'Mumbai', 'BOM');
+    await page.getByTestId('date-input').fill(futureDateIso(21));
+    await page.getByTestId('search-submit-button').click();
+    await page.waitForURL('**/results**');
+
+    await page.getByTestId('flight-select-button').first().click();
+    await page.waitForURL('**/select**');
+    await expect(page.getByTestId('fare-list')).toBeVisible();
+
+    await page.getByTestId('fare-option-saver').click();
+    await page.locator('.seat:not(.unavailable)').first().click();
+    await page.getByTestId('continue-button').click();
+
+    await page.waitForURL('**/confirm**');
+    await expect(page.getByTestId('confirmation-card')).toBeVisible();
+
+    expect(consoleErrors, `unexpected console errors: ${consoleErrors.join('; ')}`).toEqual([]);
+  });
 });

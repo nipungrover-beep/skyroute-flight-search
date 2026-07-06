@@ -200,7 +200,7 @@ export default function ResultsPage() {
 
             <div className="flight-list" data-testid="results-list">
               {displayedFlights.map((flight) => (
-                <FlightCard key={flight.id} flight={flight} />
+                <FlightCard key={flight.id} flight={flight} passengers={criteria.passengers} />
               ))}
             </div>
           </div>

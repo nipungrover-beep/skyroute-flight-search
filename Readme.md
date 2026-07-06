@@ -2,7 +2,7 @@
 
 A small full-stack app for searching domestic flights, built as a stable target for UI/API test automation (Playwright, Selenium, etc.). Search results are seeded from a fixed, deterministic dataset — no randomness — so the same query always returns the same results.
 
-**Scope (v1):** search + results only (autocomplete, filters, sorting). No booking/checkout flow, no auth.
+**Scope:** search + results (autocomplete, filters, sorting), plus fare and seat selection ending in a confirmation summary. Still no passenger-details form, payment, or auth — booking itself stays out of scope.
 
 ## Stack
 
@@ -53,6 +53,7 @@ Runs the API test suite (`server/tests/`) with Node's built-in test runner (`nod
 
 - `regression/flights-search.regression.test.js` — the search happy path (route filtering + default price sort), input validation (same origin/destination, past date, unknown airport code), and the empty-results edge case (`GOI → IXC`).
 - `regression/availability.regression.test.js` — the dedicated `/availability` endpoint (has-enough-seats, not-enough-seats, unknown flight id) and seat-based filtering on the search endpoint itself.
+- `regression/seat-fare-selection.regression.test.js` — `/fares` (ascending tiers derived from base price), `/seatmap` (correct seat count, deterministic across requests, business 2-2 layout), and `/confirm` (correct total = fare × passengers + seat fee, rejects taken/unknown seats and unknown fares).
 
 Run just the regression tests with `npm run test:regression`.
 
@@ -83,6 +84,7 @@ Drives the **actual running app** at `http://localhost:5173` with Playwright —
 - `tests/regression/filters-and-sorting.*` — default price sort, sort by duration/departure, stops/airline/departure-time/max-price filters, and the live results count.
 - `tests/regression/empty-state.*` — the `GOI → IXC` no-results route, and filtering an existing result set down to zero.
 - `tests/regression/navigation.*` — deep-linking straight to `/results?...`, and browser back-button behavior after searching again from the results page.
+- `tests/regression/seat-fare-selection.*` — fare tiers and seat map render on the selection page, live price updates as fare/seat are picked, Continue stays disabled until both are chosen, unavailable seats can't be clicked, the confirmation page shows the matching fare/seat/total, and deep-linking straight to `/flights/:id/select`.
 
 Results: `npm run test:e2e` prints a live pass/fail list in the terminal and writes an interactive HTML report to `e2e/html-report/` (open `index.html`, or run `npm run report -w e2e`). Every test — pass or fail — captures a screenshot (`use.screenshot: 'on'`); failures also get a Playwright trace. Artifacts live under `e2e/test-results/`.
 
@@ -98,8 +100,11 @@ This repo was git-initialized locally but has no remote configured — push it t
 - `GET /api/airports?q=<text>` → up to 8 airports matching code/city/name
 - `GET /api/flights?from=DEL&to=BOM&date=YYYY-MM-DD&passengers=1&travelClass=ECONOMY|BUSINESS` → matching flights, plus optional `sort` (`price`|`duration`|`departure`), `stops` (`nonstop`|`1stop`), `airlines` (comma-separated), `minPrice`/`maxPrice`, `departure` (`early-morning`|`morning`|`afternoon`|`evening`). Results are already filtered to flights with enough seats for `passengers` in the requested `travelClass`.
 - `GET /api/flights/:id/availability?passengers=1&travelClass=ECONOMY|BUSINESS` → `{ flightId, flightNumber, airline, from, to, travelClass, requestedPassengers, seatsAvailable, available }` for one specific flight. `404` if the flight id doesn't exist.
+- `GET /api/flights/:id/fares?travelClass=ECONOMY|BUSINESS` → `{ flightId, flightNumber, travelClass, basePrice, fares }`, three fixed tiers (`saver` / `flexi` / `flexi-plus`) computed as multiples of the base price, each with `baggageKg`, `meal`, `freeCancellation`, `freeDateChange`, `freeSeatSelection`.
+- `GET /api/flights/:id/seatmap?travelClass=ECONOMY|BUSINESS` → `{ flightId, travelClass, capacity, columns, rows, seats }`. Seats are generated deterministically from the flight id (same flight always produces the same layout and ~20% pre-occupied pattern) — economy is a 3-3 layout (`A-F`), business is 2-2 (`A,C,D,F`); the first two rows of each cabin are fee-bearing "extra-legroom" seats.
+- `GET /api/flights/:id/confirm?travelClass=&fareId=&seatId=&passengers=` → `{ ..., fare, seat, totalPrice, selectionId }` where `totalPrice = fare.price × passengers + seat.fee`. `400` for an unknown `fareId`/`seatId` or an already-taken seat; `selectionId` is deterministic (`SEL-<flightId>-<fareId>-<seatId>-<passengers>`), not random.
 
-Validation errors (missing fields, same origin/destination, past date, unknown airport code, `from === to`, invalid flight id, passengers out of `1–9` range) return `400`/`404` with `{ error: "..." }`.
+Validation errors (missing fields, same origin/destination, past date, unknown airport code, `from === to`, invalid flight id, passengers out of `1–9` range, unknown fare/seat id, unavailable seat) return `400`/`404` with `{ error: "..." }`.
 
 ## Sample data notes for test authors
 

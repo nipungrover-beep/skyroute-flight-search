@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
+import { computeFares } from '../lib/fares.js';
+import { generateSeatMap } from '../lib/seatMap.js';
 
 export const flightsRouter = Router();
 
@@ -179,5 +181,108 @@ flightsRouter.get('/:id/availability', (req, res) => {
     requestedPassengers: passengers,
     seatsAvailable,
     available: seatsAvailable >= passengers,
+  });
+});
+
+flightsRouter.get('/:id/fares', (req, res) => {
+  const flightId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(flightId) || flightId <= 0) {
+    return res.status(400).json({ error: 'Invalid flight id' });
+  }
+
+  const travelClass = req.query.travelClass === 'BUSINESS' ? 'BUSINESS' : 'ECONOMY';
+  const priceField = travelClass === 'BUSINESS' ? 'price_business' : 'price_economy';
+
+  const flight = db.prepare('SELECT * FROM flights WHERE id = ?').get(flightId);
+  if (!flight) {
+    return res.status(404).json({ error: 'Flight not found' });
+  }
+
+  res.json({
+    flightId: flight.id,
+    flightNumber: flight.flight_number,
+    travelClass,
+    basePrice: flight[priceField],
+    fares: computeFares(flight[priceField]),
+  });
+});
+
+flightsRouter.get('/:id/seatmap', (req, res) => {
+  const flightId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(flightId) || flightId <= 0) {
+    return res.status(400).json({ error: 'Invalid flight id' });
+  }
+
+  const travelClass = req.query.travelClass === 'BUSINESS' ? 'BUSINESS' : 'ECONOMY';
+  const seatsField = travelClass === 'BUSINESS' ? 'seats_business' : 'seats_economy';
+
+  const flight = db.prepare('SELECT * FROM flights WHERE id = ?').get(flightId);
+  if (!flight) {
+    return res.status(404).json({ error: 'Flight not found' });
+  }
+
+  const capacity = flight[seatsField];
+  const { columns, rows, seats } = generateSeatMap(flightId, travelClass, capacity);
+
+  res.json({ flightId: flight.id, travelClass, capacity, columns, rows, seats });
+});
+
+flightsRouter.get('/:id/confirm', (req, res) => {
+  const flightId = Number.parseInt(req.params.id, 10);
+  if (!Number.isInteger(flightId) || flightId <= 0) {
+    return res.status(400).json({ error: 'Invalid flight id' });
+  }
+
+  const { fareId, seatId } = req.query;
+  if (!fareId || !seatId) {
+    return res.status(400).json({ error: 'fareId and seatId are required query parameters' });
+  }
+
+  const passengers = Number.parseInt(req.query.passengers, 10) || 1;
+  if (passengers < 1 || passengers > 9) {
+    return res.status(400).json({ error: 'passengers must be between 1 and 9' });
+  }
+
+  const travelClass = req.query.travelClass === 'BUSINESS' ? 'BUSINESS' : 'ECONOMY';
+  const priceField = travelClass === 'BUSINESS' ? 'price_business' : 'price_economy';
+  const seatsField = travelClass === 'BUSINESS' ? 'seats_business' : 'seats_economy';
+
+  const flight = db.prepare('SELECT * FROM flights WHERE id = ?').get(flightId);
+  if (!flight) {
+    return res.status(404).json({ error: 'Flight not found' });
+  }
+
+  const fare = computeFares(flight[priceField]).find((f) => f.id === fareId);
+  if (!fare) {
+    return res.status(400).json({ error: `Unknown fare id: ${fareId}` });
+  }
+
+  const { seats } = generateSeatMap(flightId, travelClass, flight[seatsField]);
+  const seat = seats.find((s) => s.id === seatId);
+  if (!seat) {
+    return res.status(400).json({ error: `Unknown seat id: ${seatId}` });
+  }
+  if (!seat.available) {
+    return res.status(400).json({ error: `Seat ${seatId} is already taken` });
+  }
+
+  const airportsByCode = Object.fromEntries(
+    db.prepare('SELECT * FROM airports').all().map((a) => [a.code, a])
+  );
+
+  const totalPrice = fare.price * passengers + seat.fee;
+
+  res.json({
+    flightId: flight.id,
+    flightNumber: flight.flight_number,
+    airline: flight.airline,
+    from: { code: flight.from_code, city: airportsByCode[flight.from_code]?.city },
+    to: { code: flight.to_code, city: airportsByCode[flight.to_code]?.city },
+    travelClass,
+    passengers,
+    fare: { id: fare.id, name: fare.name, price: fare.price },
+    seat: { id: seat.id, row: seat.row, col: seat.col, type: seat.type, fee: seat.fee },
+    totalPrice,
+    selectionId: `SEL-${flightId}-${fare.id}-${seat.id}-${passengers}`,
   });
 });

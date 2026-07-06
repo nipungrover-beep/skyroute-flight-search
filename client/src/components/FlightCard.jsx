@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function formatDuration(minutes) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
@@ -8,8 +10,22 @@ function formatPrice(price) {
   return `₹${price.toLocaleString('en-IN')}`;
 }
 
-export default function FlightCard({ flight }) {
+export default function FlightCard({ flight, passengers = 1 }) {
   const stopsLabel = flight.stops === 0 ? 'Nonstop' : `${flight.stops} stop${flight.stops > 1 ? 's' : ''}`;
+
+  const selectParams = new URLSearchParams({
+    travelClass: flight.travelClass,
+    passengers: String(passengers),
+    from: flight.from.code,
+    fromCity: flight.from.city,
+    to: flight.to.code,
+    toCity: flight.to.city,
+    date: flight.date,
+    flightNumber: flight.flightNumber,
+    airline: flight.airline,
+    departTime: flight.departTime,
+    arriveTime: flight.arriveTime,
+  });
 
   return (
     <article className="flight-card" data-testid="flight-card" data-flight-id={flight.id}>
@@ -52,6 +68,13 @@ export default function FlightCard({ flight }) {
         <span className="seats-left" data-testid="flight-seats-available">
           {flight.seatsAvailable} seats left
         </span>
+        <Link
+          className="flight-select-button"
+          to={`/flights/${flight.id}/select?${selectParams.toString()}`}
+          data-testid="flight-select-button"
+        >
+          Select
+        </Link>
       </div>
     </article>
   );
