@@ -1,4 +1,4 @@
-function addMinutes(hhmm, minutes) {
+export function addMinutes(hhmm, minutes) {
   const [h, m] = hhmm.split(':').map(Number);
   const total = h * 60 + m + minutes;
   const wrapped = ((total % 1440) + 1440) % 1440;

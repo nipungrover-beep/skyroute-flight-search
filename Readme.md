@@ -54,6 +54,20 @@ Runs the API test suite (`server/tests/`) with Node's built-in test runner (`nod
 - `regression/flights-search.regression.test.js` — the search happy path (route filtering + default price sort), input validation (same origin/destination, past date, unknown airport code), and the empty-results edge case (`GOI → IXC`).
 - `regression/availability.regression.test.js` — the dedicated `/availability` endpoint (has-enough-seats, not-enough-seats, unknown flight id) and seat-based filtering on the search endpoint itself.
 
+Run just the regression tests with `npm run test:regression`.
+
+### ETL tests (seed data pipeline)
+
+```powershell
+npm run test:etl
+```
+
+This app has no external data warehouse, but `server/src/seed/` is a genuine little ETL pipeline — **extract** (static airport/flight arrays) → **transform** (compute `arriveTime` from `departTime` + duration, including day-rollover) → **load** (insert into SQLite). `tests/etl/seed-pipeline.etl.test.js` covers:
+
+- **Extract** — source data is well-formed: 12 unique 3-letter airport codes, exactly 55 flight records.
+- **Transform** — `addMinutes()` clock arithmetic is correct, including midnight rollover (e.g. `21:15 + 165min → 00:00`); every flight's `arriveTime` matches its own `departTime` + duration; basic data-quality checks (positive prices/seats/durations, business fare costs more than economy).
+- **Load** — `seedDatabase()` inserts exactly the source row counts; every flight's `from`/`to` airport code actually exists (no orphaned foreign keys); re-running the seed is idempotent (no duplicate/accumulating rows); the intentionally-unseeded `GOI ↔ IXC` route stays empty (protects the empty-results fixture used elsewhere).
+
 ### End-to-end (browser) tests
 
 ```powershell
@@ -74,7 +88,7 @@ Results: `npm run test:e2e` prints a live pass/fail list in the terminal and wri
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs on every push/PR to `main`: one job runs the backend API suite (`npm test`), a second installs Chromium and runs the full Playwright suite (`npm run test:e2e`) against a freshly-started `npm run dev` (same `webServer` config used locally — verified it cold-starts and tears itself down cleanly, matching a CI runner). Both jobs upload their HTML reports as build artifacts regardless of outcome, so a failed run's screenshots/traces are still downloadable from the Actions tab.
+`.github/workflows/ci.yml` runs on every push/PR to `main`: one job runs the backend suite (`npm test` — regression + ETL together), a second installs Chromium and runs the full Playwright suite (`npm run test:e2e`) against a freshly-started `npm run dev` (same `webServer` config used locally — verified it cold-starts and tears itself down cleanly, matching a CI runner). Both jobs upload their HTML reports as build artifacts regardless of outcome, so a failed run's screenshots/traces are still downloadable from the Actions tab.
 
 This repo was git-initialized locally but has no remote configured — push it to a GitHub repo of your own to see CI run.
 

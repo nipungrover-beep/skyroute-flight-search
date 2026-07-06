@@ -9,7 +9,9 @@
     "start": "node src/index.js",
     "seed": "node src/seed/run.js",
     "pretest": "node -e \"require('fs').mkdirSync('test-results', { recursive: true })\"",
-    "test": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=./tests/reporters/html-reporter.mjs --test-reporter-destination=./test-results/report.html"
+    "test": "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=./tests/reporters/html-reporter.mjs --test-reporter-destination=./test-results/report.html",
+    "test:regression": "node --test tests/regression/*.test.js",
+    "test:etl": "node --test tests/etl/*.test.js"
   },
   "engines": {
     "node": ">=22.5.0"
