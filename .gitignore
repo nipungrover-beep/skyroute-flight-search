@@ -14,3 +14,6 @@ playwright/.cache/
 npm-debug.log*
 .claude/
 presentation/
+test-history.json
+test-history-dashboard.html
+e2e/.history-run-*.json

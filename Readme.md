@@ -104,6 +104,16 @@ Drives the **actual running app** at `http://localhost:5173` with Playwright —
 
 Results: `npm run test:e2e` prints a live pass/fail list in the terminal and writes an interactive HTML report to `e2e/html-report/` (open `index.html`, or run `npm run report -w e2e`). Every test — pass or fail — captures a screenshot (`use.screenshot: 'on'`); failures also get a Playwright trace. Artifacts live under `e2e/test-results/`.
 
+### Test history dashboard
+
+```powershell
+npm run test:history
+```
+
+Runs every suite once (API regression, ETL, boundary/wildcard, smoke, browser regression), records the result, and writes `test-history-dashboard.html` — a grid with suites as rows and the **last 5 runs** as columns (newest on the left), each cell color-coded pass/fail with its count; hover a cell for the exact duration, commit, and timestamp. `scripts/record-test-run.mjs` is the tool (committed); `test-history.json` (its data, capped at 5 entries — the oldest is dropped once a 6th run is recorded) and the dashboard HTML are both regenerated locally and gitignored, so history is per-machine, not shared through the repo. Open `test-history-dashboard.html` directly in a browser — it's self-contained, no server needed. Run the command again after making a change to see it added as a new column.
+
+A grid was chosen over a calendar view here: with 5 runs (not weeks/months of daily activity) a calendar would be mostly empty and can't show a per-suite breakdown in one glance the way the grid does.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push/PR to `main`: one job runs the backend suite (`npm test` — regression + ETL + boundary/wildcard together), a second installs Chromium and runs the full Playwright suite (`npm run test:e2e`) against a freshly-started `npm run dev` (same `webServer` config used locally — verified it cold-starts and tears itself down cleanly, matching a CI runner). Both jobs upload their HTML reports as build artifacts regardless of outcome, so a failed run's screenshots/traces are still downloadable from the Actions tab.
