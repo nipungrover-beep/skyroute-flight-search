@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { futureDateIso, pickAirport } from '../helpers.js';
 
 test.describe('navigation', () => {
-  test('a deep link directly to /results renders without visiting the home page first', async ({ page }) => {
+  test('[E2E-REG-016] a deep link directly to /results renders without visiting the home page first', async ({ page }) => {
     const date = futureDateIso(18);
     const params = new URLSearchParams({
       from: 'DEL',
@@ -21,7 +21,7 @@ test.describe('navigation', () => {
     await expect(page.getByTestId('to-input')).toHaveValue('Mumbai (BOM)');
   });
 
-  test('browser back after a new search from the results page restores the previous search', async ({ page }) => {
+  test('[E2E-REG-017] browser back after a new search from the results page restores the previous search', async ({ page }) => {
     const date = futureDateIso(18);
 
     await page.goto('/');

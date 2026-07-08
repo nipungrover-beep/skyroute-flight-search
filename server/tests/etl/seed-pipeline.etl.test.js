@@ -19,7 +19,7 @@ after(() => {
   db.close();
 });
 
-test('extract: source airport records are well-formed and unique', () => {
+test('[API-ETL-001] extract: source airport records are well-formed and unique', () => {
   assert.equal(airports.length, 12);
   const codes = airports.map((a) => a.code);
   assert.equal(new Set(codes).size, codes.length, 'airport codes must be unique');
@@ -29,18 +29,18 @@ test('extract: source airport records are well-formed and unique', () => {
   }
 });
 
-test('extract: source flight records total the expected count', () => {
+test('[API-ETL-002] extract: source flight records total the expected count', () => {
   assert.equal(flights.length, 55);
 });
 
-test('transform: addMinutes computes clock arithmetic correctly, including day wraparound', () => {
+test('[API-ETL-003] transform: addMinutes computes clock arithmetic correctly, including day wraparound', () => {
   assert.equal(addMinutes('06:00', 130), '08:10');
   assert.equal(addMinutes('21:15', 165), '00:00'); // exact midnight rollover
   assert.equal(addMinutes('23:50', 20), '00:10'); // past-midnight rollover
   assert.equal(addMinutes('00:00', 0), '00:00');
 });
 
-test('transform: every flight\'s arriveTime matches its own departTime + duration', () => {
+test('[API-ETL-004] transform: every flight\'s arriveTime matches its own departTime + duration', () => {
   for (const flight of flights) {
     const expected = addMinutes(flight.departTime, flight.durationMinutes);
     assert.equal(
@@ -51,7 +51,7 @@ test('transform: every flight\'s arriveTime matches its own departTime + duratio
   }
 });
 
-test('transform: flight records pass basic data-quality checks', () => {
+test('[API-ETL-005] transform: flight records pass basic data-quality checks', () => {
   for (const flight of flights) {
     assert.match(flight.departTime, TIME_RE, `${flight.flightNumber} departTime`);
     assert.match(flight.arriveTime, TIME_RE, `${flight.flightNumber} arriveTime`);
@@ -63,7 +63,7 @@ test('transform: flight records pass basic data-quality checks', () => {
   }
 });
 
-test('load: seedDatabase() loads exactly the source row counts', () => {
+test('[API-ETL-006] load: seedDatabase() loads exactly the source row counts', () => {
   const result = seedDatabase();
   assert.deepEqual(result, { airportCount: 12, flightCount: 55 });
 
@@ -73,7 +73,7 @@ test('load: seedDatabase() loads exactly the source row counts', () => {
   assert.equal(flightRows, 55);
 });
 
-test('load: every flight references an airport that actually exists', () => {
+test('[API-ETL-007] load: every flight references an airport that actually exists', () => {
   seedDatabase();
   const orphans = db
     .prepare(
@@ -85,7 +85,7 @@ test('load: every flight references an airport that actually exists', () => {
   assert.deepEqual(orphans, [], 'no flight should reference an unknown airport code');
 });
 
-test('load: re-seeding is idempotent — no duplicate or accumulating rows', () => {
+test('[API-ETL-008] load: re-seeding is idempotent — no duplicate or accumulating rows', () => {
   seedDatabase();
   const first = {
     airports: db.prepare('SELECT COUNT(*) AS n FROM airports').get().n,
@@ -102,7 +102,7 @@ test('load: re-seeding is idempotent — no duplicate or accumulating rows', () 
   assert.deepEqual(second, first);
 });
 
-test('load: the intentionally-unseeded GOI <-> IXC route stays empty', () => {
+test('[API-ETL-009] load: the intentionally-unseeded GOI <-> IXC route stays empty', () => {
   seedDatabase();
   const count = db
     .prepare(

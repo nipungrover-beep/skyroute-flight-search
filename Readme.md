@@ -85,6 +85,10 @@ npm run test:boundary
 
 Two real bugs were found and fixed this way — see [BUG_AUDIT.md](BUG_AUDIT.md) for the full root-cause writeups.
 
+### Test case IDs & traceability
+
+Every test carries a stable ID (`API-REG-001`, `API-BND-034`, `E2E-REG-024`, etc.), prefixed onto its title so it shows up directly in run output and reports — no separate lookup needed to see which case failed. [TRACEABILITY.md](TRACEABILITY.md) maps every ID to its feature area and file, and is the reference for scoping an impact-based test run: find the IDs touching a changed feature area, run those first, then the full suite as a safety net.
+
 ### End-to-end (browser) tests
 
 ```powershell

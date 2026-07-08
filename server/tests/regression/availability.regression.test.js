@@ -27,7 +27,7 @@ after(() => {
   db.close();
 });
 
-test('GET /api/flights/:id/availability confirms a flight can accommodate the requested party size', async () => {
+test('[API-REG-006] GET /api/flights/:id/availability confirms a flight can accommodate the requested party size', async () => {
   const search = await request.get('/api/flights').query({ from: 'DEL', to: 'BOM', date: VALID_DATE });
   const [flight] = search.body.flights;
 
@@ -43,7 +43,7 @@ test('GET /api/flights/:id/availability confirms a flight can accommodate the re
   assert.ok(res.body.seatsAvailable >= 2);
 });
 
-test('GET /api/flights/:id/availability reports unavailability when seats are insufficient', async () => {
+test('[API-REG-007] GET /api/flights/:id/availability reports unavailability when seats are insufficient', async () => {
   // Seed data: SG 145 (BOM -> DEL) has only 4 business-class seats.
   const search = await request
     .get('/api/flights')
@@ -61,14 +61,14 @@ test('GET /api/flights/:id/availability reports unavailability when seats are in
   assert.equal(res.body.seatsAvailable, 4);
 });
 
-test('GET /api/flights/:id/availability returns 404 for an unknown flight id', async () => {
+test('[API-REG-008] GET /api/flights/:id/availability returns 404 for an unknown flight id', async () => {
   const res = await request.get('/api/flights/999999/availability').query({ passengers: 1 });
 
   assert.equal(res.status, 404);
   assert.match(res.body.error, /not found/i);
 });
 
-test('GET /api/flights excludes flights without enough seats for the requested passenger count', async () => {
+test('[API-REG-009] GET /api/flights excludes flights without enough seats for the requested passenger count', async () => {
   const unfiltered = await request
     .get('/api/flights')
     .query({ from: 'DEL', to: 'BOM', date: VALID_DATE, travelClass: 'BUSINESS' });

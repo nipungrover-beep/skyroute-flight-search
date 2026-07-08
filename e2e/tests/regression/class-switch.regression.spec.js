@@ -15,7 +15,7 @@ async function reachConfirmation(page) {
 }
 
 test.describe('class switch on the confirmation page', () => {
-  test('the toggle shows Economy active by default, matching the class picked during selection', async ({
+  test('[E2E-REG-024] the toggle shows Economy active by default, matching the class picked during selection', async ({
     page,
   }) => {
     await reachConfirmation(page);
@@ -25,7 +25,7 @@ test.describe('class switch on the confirmation page', () => {
     await expect(page.getByTestId('class-toggle-business')).toBeEnabled();
   });
 
-  test('switching Economy to Business keeps the same fare tier, updates seat and price, and updates the URL', async ({
+  test('[E2E-REG-025] switching Economy to Business keeps the same fare tier, updates seat and price, and updates the URL', async ({
     page,
   }) => {
     await reachConfirmation(page);
@@ -44,7 +44,7 @@ test.describe('class switch on the confirmation page', () => {
     expect(page.url()).toContain('travelClass=BUSINESS');
   });
 
-  test('switching Business back to Economy restores the original fare, seat, and price exactly', async ({
+  test('[E2E-REG-026] switching Business back to Economy restores the original fare, seat, and price exactly', async ({
     page,
   }) => {
     await reachConfirmation(page);
@@ -66,7 +66,7 @@ test.describe('class switch on the confirmation page', () => {
     expect(page.url()).toContain('travelClass=ECONOMY');
   });
 
-  test('the auto-picked seat prefers a standard (fee-free) seat, and says so when none is available', async ({
+  test('[E2E-REG-027] the auto-picked seat prefers a standard (fee-free) seat, and says so when none is available', async ({
     page,
   }) => {
     await reachConfirmation(page);
@@ -87,7 +87,7 @@ test.describe('class switch on the confirmation page', () => {
     }
   });
 
-  test('the total price always equals fare price plus seat fee after a switch', async ({ page, request }) => {
+  test('[E2E-REG-028] the total price always equals fare price plus seat fee after a switch', async ({ page, request }) => {
     await reachConfirmation(page);
     await page.getByTestId('class-toggle-business').click();
     await expect(page.getByTestId('class-toggle-business')).toHaveClass(/active/);

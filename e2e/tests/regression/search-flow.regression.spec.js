@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { futureDateIso, pickAirport, searchFlights } from '../helpers.js';
 
 test.describe('search flow', () => {
-  test('autocomplete suggests and selects an airport by city name', async ({ page }) => {
+  test('[E2E-REG-001] autocomplete suggests and selects an airport by city name', async ({ page }) => {
     await page.goto('/');
     await page.getByTestId('from-input').fill('Bengaluru');
     const option = page.getByTestId('from-option-BLR');
@@ -12,7 +12,7 @@ test.describe('search flow', () => {
     await expect(page.getByTestId('from-input')).toHaveValue('Bengaluru (BLR)');
   });
 
-  test('swap button exchanges origin and destination', async ({ page }) => {
+  test('[E2E-REG-002] swap button exchanges origin and destination', async ({ page }) => {
     await page.goto('/');
     await pickAirport(page, 'from', 'Delhi', 'DEL');
     await pickAirport(page, 'to', 'Mumbai', 'BOM');
@@ -23,7 +23,7 @@ test.describe('search flow', () => {
     await expect(page.getByTestId('to-input')).toHaveValue('Delhi (DEL)');
   });
 
-  test('rejects searching with the same origin and destination', async ({ page }) => {
+  test('[E2E-REG-003] rejects searching with the same origin and destination', async ({ page }) => {
     await page.goto('/');
     await pickAirport(page, 'from', 'Delhi', 'DEL');
     await pickAirport(page, 'to', 'Delhi', 'DEL');
@@ -35,7 +35,7 @@ test.describe('search flow', () => {
     await expect(page).not.toHaveURL(/\/results/);
   });
 
-  test('rejects submitting without a departure date', async ({ page }) => {
+  test('[E2E-REG-004] rejects submitting without a departure date', async ({ page }) => {
     await page.goto('/');
     await pickAirport(page, 'from', 'Delhi', 'DEL');
     await pickAirport(page, 'to', 'Mumbai', 'BOM');
@@ -45,7 +45,7 @@ test.describe('search flow', () => {
     await expect(page.getByTestId('search-form-error')).toContainText(/departure date/i);
   });
 
-  test('a successful search navigates to /results with matching query params and flight cards', async ({
+  test('[E2E-REG-005] a successful search navigates to /results with matching query params and flight cards', async ({
     page,
   }) => {
     const date = futureDateIso(15);

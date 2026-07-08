@@ -14,7 +14,7 @@ async function goToFirstFlightSelection(page) {
 }
 
 test.describe('fare and seat selection', () => {
-  test('selection page shows three fare tiers and a seat map', async ({ page }) => {
+  test('[E2E-REG-018] selection page shows three fare tiers and a seat map', async ({ page }) => {
     await goToFirstFlightSelection(page);
 
     await expect(page.getByTestId('fare-option-saver')).toBeVisible();
@@ -23,7 +23,7 @@ test.describe('fare and seat selection', () => {
     await expect(page.getByTestId('seat-map')).toBeVisible();
   });
 
-  test('selecting the saver fare shows the base price before any seat is chosen', async ({ page }) => {
+  test('[E2E-REG-019] selecting the saver fare shows the base price before any seat is chosen', async ({ page }) => {
     await goToFirstFlightSelection(page);
 
     await page.getByTestId('fare-option-saver').click();
@@ -32,7 +32,7 @@ test.describe('fare and seat selection', () => {
     await expect(page.getByTestId('selection-summary')).toContainText('₹4,899');
   });
 
-  test('continue is disabled until both a fare and a seat are chosen', async ({ page }) => {
+  test('[E2E-REG-020] continue is disabled until both a fare and a seat are chosen', async ({ page }) => {
     await goToFirstFlightSelection(page);
     const continueButton = page.getByTestId('continue-button');
 
@@ -45,7 +45,7 @@ test.describe('fare and seat selection', () => {
     await expect(continueButton).toBeEnabled();
   });
 
-  test('an unavailable seat cannot be selected', async ({ page }) => {
+  test('[E2E-REG-021] an unavailable seat cannot be selected', async ({ page }) => {
     await goToFirstFlightSelection(page);
 
     const unavailableSeat = page.locator('.seat.unavailable').first();
@@ -53,7 +53,7 @@ test.describe('fare and seat selection', () => {
     await expect(unavailableSeat).toBeDisabled();
   });
 
-  test('confirming a selection shows the matching fare, seat, and total on the confirmation page', async ({
+  test('[E2E-REG-022] confirming a selection shows the matching fare, seat, and total on the confirmation page', async ({
     page,
   }) => {
     await goToFirstFlightSelection(page);
@@ -73,7 +73,7 @@ test.describe('fare and seat selection', () => {
     await expect(page.getByTestId('confirmation-total-price')).toHaveText('₹4,899');
   });
 
-  test('a deep link directly to the selection page renders without visiting results first', async ({
+  test('[E2E-REG-023] a deep link directly to the selection page renders without visiting results first', async ({
     page,
     request,
   }) => {

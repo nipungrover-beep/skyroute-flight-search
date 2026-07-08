@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { futureDateIso, pickAirport } from '../helpers.js';
 
 test.describe('smoke', () => {
-  test('home page loads with a usable search form', async ({ page }) => {
+  test('[E2E-SMK-001] home page loads with a usable search form', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByTestId('search-form')).toBeVisible();
     await expect(page.getByTestId('from-input')).toBeVisible();
@@ -10,7 +10,7 @@ test.describe('smoke', () => {
     await expect(page.getByTestId('search-submit-button')).toBeVisible();
   });
 
-  test('a basic search returns results without errors', async ({ page }) => {
+  test('[E2E-SMK-002] a basic search returns results without errors', async ({ page }) => {
     const consoleErrors = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
@@ -30,14 +30,14 @@ test.describe('smoke', () => {
     expect(consoleErrors, `unexpected console errors: ${consoleErrors.join('; ')}`).toEqual([]);
   });
 
-  test('backend API is reachable through the app', async ({ request }) => {
+  test('[E2E-SMK-003] backend API is reachable through the app', async ({ request }) => {
     const res = await request.get('/api/health');
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
     expect(body.status).toBe('ok');
   });
 
-  test('can select a fare and seat and reach a confirmation', async ({ page }) => {
+  test('[E2E-SMK-004] can select a fare and seat and reach a confirmation', async ({ page }) => {
     const consoleErrors = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());

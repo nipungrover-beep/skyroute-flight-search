@@ -13,27 +13,27 @@ async function goToResults(page) {
 }
 
 test.describe('filters and sorting', () => {
-  test('results are sorted by price ascending by default', async ({ page }) => {
+  test('[E2E-REG-006] results are sorted by price ascending by default', async ({ page }) => {
     await goToResults(page);
     const prices = await page.getByTestId('flight-price').allTextContents();
     expect(prices).toEqual(['₹4,999', '₹5,399', '₹5,899']);
   });
 
-  test('sorting by departure time reorders the list earliest-first', async ({ page }) => {
+  test('[E2E-REG-007] sorting by departure time reorders the list earliest-first', async ({ page }) => {
     await goToResults(page);
     await page.getByTestId('sort-select').selectOption('departure');
     const numbers = await page.getByTestId('flight-number').allTextContents();
     expect(numbers).toEqual(['6E 5301', 'UK 811', 'QP 1402']);
   });
 
-  test('sorting by duration puts the longest flight last', async ({ page }) => {
+  test('[E2E-REG-008] sorting by duration puts the longest flight last', async ({ page }) => {
     await goToResults(page);
     await page.getByTestId('sort-select').selectOption('duration');
     const numbers = await page.getByTestId('flight-number').allTextContents();
     expect(numbers[2]).toBe('UK 811'); // the only 1-stop, longest (170min) flight
   });
 
-  test('nonstop filter removes the 1-stop flight', async ({ page }) => {
+  test('[E2E-REG-009] nonstop filter removes the 1-stop flight', async ({ page }) => {
     await goToResults(page);
     await page.getByTestId('filter-stops-nonstop').check();
 
@@ -42,7 +42,7 @@ test.describe('filters and sorting', () => {
     expect(numbers).not.toContain('UK 811');
   });
 
-  test('airline filter narrows results to the selected carrier', async ({ page }) => {
+  test('[E2E-REG-010] airline filter narrows results to the selected carrier', async ({ page }) => {
     await goToResults(page);
     await page.getByTestId('filter-airline-IndiGo').check();
 
@@ -50,7 +50,7 @@ test.describe('filters and sorting', () => {
     await expect(page.getByTestId('flight-number')).toHaveText('6E 5301');
   });
 
-  test('departure-time filter narrows to flights in that window', async ({ page }) => {
+  test('[E2E-REG-011] departure-time filter narrows to flights in that window', async ({ page }) => {
     await goToResults(page);
     await page.getByTestId('filter-departure-early-morning').check();
 
@@ -58,7 +58,7 @@ test.describe('filters and sorting', () => {
     await expect(page.getByTestId('flight-number')).toHaveText('6E 5301');
   });
 
-  test('max-price filter excludes flights priced above the threshold', async ({ page }) => {
+  test('[E2E-REG-012] max-price filter excludes flights priced above the threshold', async ({ page }) => {
     await goToResults(page);
 
     const slider = page.getByTestId('filter-price-max');
@@ -75,7 +75,7 @@ test.describe('filters and sorting', () => {
     await expect(page.getByTestId('flight-price')).toHaveText('₹4,999');
   });
 
-  test('results count reflects the currently filtered list', async ({ page }) => {
+  test('[E2E-REG-013] results count reflects the currently filtered list', async ({ page }) => {
     await goToResults(page);
     await expect(page.getByTestId('results-count')).toHaveText('3 flights found');
 

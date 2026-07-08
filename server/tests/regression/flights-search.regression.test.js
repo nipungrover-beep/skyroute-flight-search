@@ -27,7 +27,7 @@ after(() => {
   db.close();
 });
 
-test('GET /api/flights returns matching flights sorted by price for a valid route', async () => {
+test('[API-REG-001] GET /api/flights returns matching flights sorted by price for a valid route', async () => {
   const res = await request.get('/api/flights').query({ from: 'DEL', to: 'BOM', date: VALID_DATE });
 
   assert.equal(res.status, 200);
@@ -45,26 +45,26 @@ test('GET /api/flights returns matching flights sorted by price for a valid rout
 });
 
 test('GET /api/flights rejects invalid search parameters', async (t) => {
-  await t.test('same origin and destination', async () => {
+  await t.test('[API-REG-002] same origin and destination', async () => {
     const res = await request.get('/api/flights').query({ from: 'DEL', to: 'DEL', date: VALID_DATE });
     assert.equal(res.status, 400);
     assert.match(res.body.error, /cannot be the same/i);
   });
 
-  await t.test('departure date in the past', async () => {
+  await t.test('[API-REG-003] departure date in the past', async () => {
     const res = await request.get('/api/flights').query({ from: 'DEL', to: 'BOM', date: '2000-01-01' });
     assert.equal(res.status, 400);
     assert.match(res.body.error, /past/i);
   });
 
-  await t.test('unknown airport code', async () => {
+  await t.test('[API-REG-004] unknown airport code', async () => {
     const res = await request.get('/api/flights').query({ from: 'XXX', to: 'BOM', date: VALID_DATE });
     assert.equal(res.status, 400);
     assert.match(res.body.error, /unknown origin airport/i);
   });
 });
 
-test('GET /api/flights returns an empty result set for a route with no scheduled flights', async () => {
+test('[API-REG-005] GET /api/flights returns an empty result set for a route with no scheduled flights', async () => {
   const res = await request.get('/api/flights').query({ from: 'GOI', to: 'IXC', date: VALID_DATE });
 
   assert.equal(res.status, 200);
