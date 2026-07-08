@@ -2,7 +2,7 @@
 
 A small full-stack app for searching domestic flights, built as a stable target for UI/API test automation (Playwright, Selenium, etc.). Search results are seeded from a fixed, deterministic dataset — no randomness — so the same query always returns the same results.
 
-**Scope:** search + results (autocomplete, filters, sorting), plus fare and seat selection ending in a confirmation summary. Still no passenger-details form, payment, or auth — booking itself stays out of scope.
+**Scope:** search + results (autocomplete, filters, sorting), plus fare and seat selection ending in a confirmation summary — including switching Economy ↔ Business right from that summary screen. Still no passenger-details form, payment, or auth — booking itself stays out of scope.
 
 ## Stack
 
@@ -101,6 +101,7 @@ Drives the **actual running app** at `http://localhost:5173` with Playwright —
 - `tests/regression/empty-state.*` — the `GOI → IXC` no-results route, and filtering an existing result set down to zero.
 - `tests/regression/navigation.*` — deep-linking straight to `/results?...`, and browser back-button behavior after searching again from the results page.
 - `tests/regression/seat-fare-selection.*` — fare tiers and seat map render on the selection page, live price updates as fare/seat are picked, Continue stays disabled until both are chosen, unavailable seats can't be clicked, the confirmation page shows the matching fare/seat/total, and deep-linking straight to `/flights/:id/select`.
+- `tests/regression/class-switch.*` — the Economy/Business toggle on the confirmation page: correct default state, switching keeps the same fare tier but recalculates seat/price, switching back restores the original selection exactly, the auto-picked seat prefers a fee-free standard seat (and shows an explanatory note on screen when none is available), and the displayed total always matches the API's own math.
 
 Results: `npm run test:e2e` prints a live pass/fail list in the terminal and writes an interactive HTML report to `e2e/html-report/` (open `index.html`, or run `npm run report -w e2e`). Every test — pass or fail — captures a screenshot (`use.screenshot: 'on'`); failures also get a Playwright trace. Artifacts live under `e2e/test-results/`.
 

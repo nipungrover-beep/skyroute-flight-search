@@ -46,6 +46,20 @@ A running log of real defects this project's test automation has actually caught
 
 ---
 
+## 2026-07-09 — Switching class could silently add an unexpected seat fee, with no explanation
+
+**Found by:** Writing a new e2e regression test (`class-switch.regression.spec.js`) for the Economy/Business toggle on the confirmation page, asserting the auto-picked seat would always be a fee-free standard seat.
+
+**Symptom:** The test failed — for a flight with a small Business cabin, the auto-picked seat after switching landed in row 1 (an extra-legroom, fee-bearing row), pushing the total price up by both the class fare difference *and* an unadvertised seat fee, with nothing on screen explaining why.
+
+**Root cause:** Not a logic bug — a genuine product gap. `seatMap.js` marks the first `EXTRA_LEGROOM_ROWS` (2) rows of every cabin as fee-bearing. Economy cabins (6 seats/row) always have standard rows left over; small Business cabins (4 seats/row, sometimes only 8 total seats) can have *every* seat inside those first two rows. The class-switch handler's fallback (`find standard seat, else find any available seat`) silently took the fee-bearing fallback with no indication to the user that it wasn't a free pick.
+
+**Fix:** `ConfirmationPage.jsx` now tracks whether the fallback was used and shows an inline note — *"No standard seat was free in Business — an extra-legroom seat (+fee) was selected instead."* — only when it applies.
+
+**Verified by:** Rewrote the test to assert either outcome is correct as long as it's honestly represented: a standard seat with no notice, or a fee seat *with* the notice visible. Ran the full `class-switch.regression.spec.js` file (5/5 passing), the existing `seat-fare-selection.regression.spec.js` and `smoke.spec.js` as targeted impact checks (both unaffected, all passing), then the full suite (139/139).
+
+---
+
 ## How this fits into the test suite
 
-The two 2026-07-08 bugs were both caught by the same initiative: a dedicated **boundary value** test category (`server/tests/boundary/`, run via `npm run test:boundary`), alongside a **wildcard search** test file for the airport autocomplete's partial/substring matching. See the [README](Readme.md#tests) for the full breakdown of what each file covers.
+The two 2026-07-08 bugs were both caught by the same initiative: a dedicated **boundary value** test category (`server/tests/boundary/`, run via `npm run test:boundary`), alongside a **wildcard search** test file for the airport autocomplete's partial/substring matching. The 2026-07-09 finding came from writing tests *for* a new feature (the class-switch toggle) rather than testing existing behavior — a reminder that new-feature test cases catch real gaps too, not just regression suites. See the [README](Readme.md#tests) for the full breakdown of what each file covers.

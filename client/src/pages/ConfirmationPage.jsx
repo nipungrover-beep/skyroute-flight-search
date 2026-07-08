@@ -1,14 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { confirmSelection } from '../api/client.js';
+import { confirmSelection, getSeatMap } from '../api/client.js';
 
 function formatPrice(price) {
   return `₹${price.toLocaleString('en-IN')}`;
 }
 
+function classLabel(travelClass) {
+  return travelClass === 'BUSINESS' ? 'Business' : 'Economy';
+}
+
 export default function ConfirmationPage() {
   const { flightId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const criteria = useMemo(
     () => ({
@@ -24,7 +28,14 @@ export default function ConfirmationPage() {
   const [status, setStatus] = useState('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [confirmation, setConfirmation] = useState(null);
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState('');
+  const [feeSeatNotice, setFeeSeatNotice] = useState(false);
 
+  // Only the initial load reacts to the URL. A class switch is handled entirely by
+  // handleClassSwitch below, which updates `confirmation` in place — re-running this
+  // effect on every searchParams change would flip status back to 'loading' and hide
+  // the whole card during what should be a quick, in-place update.
   useEffect(() => {
     if (!criteria.fareId || !criteria.seatId) {
       setStatus('error');
@@ -42,7 +53,41 @@ export default function ConfirmationPage() {
         setErrorMessage(err.message);
         setStatus('error');
       });
-  }, [flightId, criteria.travelClass, criteria.passengers, criteria.fareId, criteria.seatId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flightId]);
+
+  async function handleClassSwitch(newClass) {
+    if (!confirmation || switching || newClass === confirmation.travelClass) return;
+
+    setSwitching(true);
+    setSwitchError('');
+    try {
+      const seatMap = await getSeatMap(flightId, newClass);
+      const standardSeat = seatMap.seats.find((s) => s.available && s.type === 'standard');
+      const preferredSeat = standardSeat ?? seatMap.seats.find((s) => s.available);
+      if (!preferredSeat) {
+        throw new Error(`No seats available in ${classLabel(newClass)} class.`);
+      }
+
+      const data = await confirmSelection(flightId, {
+        travelClass: newClass,
+        passengers: criteria.passengers,
+        fareId: criteria.fareId,
+        seatId: preferredSeat.id,
+      });
+
+      setConfirmation(data);
+      setFeeSeatNotice(!standardSeat && preferredSeat.fee > 0);
+      const params = new URLSearchParams(searchParams);
+      params.set('travelClass', newClass);
+      params.set('seatId', preferredSeat.id);
+      setSearchParams(params, { replace: true });
+    } catch (err) {
+      setSwitchError(err.message);
+    } finally {
+      setSwitching(false);
+    }
+  }
 
   return (
     <div className="confirmation-page">
@@ -83,7 +128,44 @@ export default function ConfirmationPage() {
             </div>
             <div>
               <dt>Class</dt>
-              <dd>{confirmation.travelClass}</dd>
+              <dd>
+                <div className="class-toggle" role="group" aria-label="Travel class" data-testid="class-toggle">
+                  <button
+                    type="button"
+                    className={`class-toggle-option ${confirmation.travelClass === 'ECONOMY' ? 'active' : ''}`}
+                    onClick={() => handleClassSwitch('ECONOMY')}
+                    disabled={switching || confirmation.travelClass === 'ECONOMY'}
+                    data-testid="class-toggle-economy"
+                  >
+                    Economy
+                  </button>
+                  <button
+                    type="button"
+                    className={`class-toggle-option ${confirmation.travelClass === 'BUSINESS' ? 'active' : ''}`}
+                    onClick={() => handleClassSwitch('BUSINESS')}
+                    disabled={switching || confirmation.travelClass === 'BUSINESS'}
+                    data-testid="class-toggle-business"
+                  >
+                    Business
+                  </button>
+                </div>
+                {switching && (
+                  <span className="class-switch-status" data-testid="class-switch-loading">
+                    Updating…
+                  </span>
+                )}
+                {switchError && (
+                  <span className="class-switch-status error" role="alert" data-testid="class-switch-error">
+                    {switchError}
+                  </span>
+                )}
+                {!switching && feeSeatNotice && (
+                  <span className="class-switch-status" data-testid="class-switch-fee-notice">
+                    No standard seat was free in {classLabel(confirmation.travelClass)} — an extra-legroom seat
+                    (+fee) was selected instead.
+                  </span>
+                )}
+              </dd>
             </div>
           </dl>
 
