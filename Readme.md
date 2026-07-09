@@ -2,7 +2,7 @@
 
 A small full-stack app for searching domestic flights, built as a stable target for UI/API test automation (Playwright, Selenium, etc.). Search results are seeded from a fixed, deterministic dataset — no randomness — so the same query always returns the same results.
 
-**Scope:** search + results (autocomplete, filters, sorting), plus fare and seat selection ending in a confirmation summary — including switching Economy ↔ Business right from that summary screen. Still no passenger-details form, payment, or auth — booking itself stays out of scope.
+**Scope:** search + results (autocomplete, filters, sorting), plus fare and seat selection ending in a confirmation summary — including switching Economy ↔ Business right from that summary screen. A standalone login/signup/forgot-password flow exists too, but isn't wired into the search/booking flow above — no session, no protected routes. Still no passenger-details form or payment — booking itself stays out of scope.
 
 ## Stack
 
@@ -54,6 +54,7 @@ Runs the API test suite (`server/tests/`) with Node's built-in test runner (`nod
 - `regression/flights-search.regression.test.js` — the search happy path (route filtering + default price sort), input validation (same origin/destination, past date, unknown airport code), and the empty-results edge case (`GOI → IXC`).
 - `regression/availability.regression.test.js` — the dedicated `/availability` endpoint (has-enough-seats, not-enough-seats, unknown flight id) and seat-based filtering on the search endpoint itself.
 - `regression/seat-fare-selection.regression.test.js` — `/fares` (ascending tiers derived from base price), `/seatmap` (correct seat count, deterministic across requests, business 2-2 layout), and `/confirm` (correct total = fare × passengers + seat fee, rejects taken/unknown seats and unknown fares).
+- `regression/auth.regression.test.js` — signup (all fields, optional username, duplicate email/mobile/username rejected, mismatched confirm password rejected), login by email/mobile/username (and rejecting a wrong password or unknown login ID), and the forgot-password → reset-password round trip (including rejecting an invalid or already-used token).
 
 Run just the regression tests with `npm run test:regression`.
 
@@ -82,6 +83,7 @@ npm run test:boundary
 - `price-filter.boundary.test.js` — `minPrice`/`maxPrice` exactly at, one above, and one below each seeded flight's price; `minPrice === maxPrice`; an inverted range.
 - `flight-id.boundary.test.js` — `0`, `-1`, non-numeric, and decimal ids across `/availability`, `/fares`, `/seatmap`, `/confirm`, plus the lowest/highest seeded id and one past it.
 - `airport-search.wildcard.test.js` — the autocomplete's partial matching: empty/whitespace query, single character, code-prefix-only vs. city/name-substring-anywhere, case-insensitivity, no-match, an oversized query, and a SQL-injection-shaped string (proven harmless — the query is a JS array filter, not raw SQL).
+- `auth.boundary.test.js` — password strength edges (9 vs. 10 chars, missing letter/digit, 1 vs. 2 special characters), email/mobile/username format edges (malformed email, 9/11-digit mobile numbers, a leading digit below 6, username length 2/3/20/21 and a leading digit or embedded space), and reset-token expiry (one second before vs. after the cutoff).
 
 Two real bugs were found and fixed this way — see [BUG_AUDIT.md](BUG_AUDIT.md) for the full root-cause writeups.
 
@@ -106,6 +108,7 @@ Drives the **actual running app** at `http://localhost:5173` with Playwright —
 - `tests/regression/navigation.*` — deep-linking straight to `/results?...`, and browser back-button behavior after searching again from the results page.
 - `tests/regression/seat-fare-selection.*` — fare tiers and seat map render on the selection page, live price updates as fare/seat are picked, Continue stays disabled until both are chosen, unavailable seats can't be clicked, the confirmation page shows the matching fare/seat/total, and deep-linking straight to `/flights/:id/select`.
 - `tests/regression/class-switch.*` — the Economy/Business toggle on the confirmation page: correct default state, switching keeps the same fare tier but recalculates seat/price, switching back restores the original selection exactly, the auto-picked seat prefers a fee-free standard seat (and shows an explanatory note on screen when none is available), and the displayed total always matches the API's own math.
+- `tests/regression/auth.*` — the "Log in" header link, signup success linking back to login, logging in with the freshly-created username, a wrong-password error, a weak-password signup error that leaves no account behind, and the full forgot-password → reset-password → log in with the new password round trip.
 
 Results: `npm run test:e2e` prints a live pass/fail list in the terminal and writes an interactive HTML report to `e2e/html-report/` (open `index.html`, or run `npm run report -w e2e`). Every test — pass or fail — captures a screenshot (`use.screenshot: 'on'`); failures also get a Playwright trace. Artifacts live under `e2e/test-results/`.
 
@@ -136,6 +139,15 @@ This repo was git-initialized locally but has no remote configured — push it t
 - `GET /api/flights/:id/confirm?travelClass=&fareId=&seatId=&passengers=` → `{ ..., fare, seat, totalPrice, selectionId }` where `totalPrice = fare.price × passengers + seat.fee`. `400` for an unknown `fareId`/`seatId` or an already-taken seat; `selectionId` is deterministic (`SEL-<flightId>-<fareId>-<seatId>-<passengers>`), not random.
 
 Validation errors (missing fields, same origin/destination, past date, unknown airport code, `from === to`, invalid flight id, passengers out of `1–9` range, unknown fare/seat id, unavailable seat) return `400`/`404` with `{ error: "..." }`.
+
+### Auth (standalone — not wired into the booking flow above)
+
+- `POST /api/auth/signup` body `{ email, mobile, username?, password, confirmPassword }` → `201` with `{ userId, email, mobile, username }` (never the password/hash). `username` is optional; when given it becomes an additional valid login ID alongside email and mobile. `400` for a missing/invalid field or mismatched passwords, `409` if the email, mobile, or username is already taken.
+- `POST /api/auth/login` body `{ loginId, password }` → `200` with the same public user shape. `loginId` is matched as an email, a 10-digit mobile number, or a username depending on its shape. `400` if `loginId` doesn't match any of those three shapes, `401` for a wrong password or unknown account.
+- `POST /api/auth/forgot-password` body `{ loginId }` → `200` with `{ message, resetToken, expiresAt }`. **POC shortcut:** this app has no real email service, so the reset token is returned directly in the response instead of being emailed, keeping the flow fully testable end-to-end. `404` if no account matches.
+- `POST /api/auth/reset-password` body `{ token, newPassword, confirmPassword }` → `200` on success. `400` for an unknown/already-used/expired token, a weak password, or mismatched passwords. Tokens expire 30 minutes after being issued and can only be used once.
+
+Password rule (signup and reset alike): at least 10 characters, with at least one letter, one digit, and two special (non-alphanumeric) characters. Mobile numbers must be a 10-digit number starting with 6–9. Usernames, when supplied, must be 3–20 characters, start with a letter, and contain only letters, digits, `_`, or `.`.
 
 ## Sample data notes for test authors
 

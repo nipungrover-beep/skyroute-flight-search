@@ -52,6 +52,21 @@ body {
   opacity: 0.85;
 }
 
+.site-nav {
+  margin-left: auto;
+}
+
+.site-nav a {
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.site-nav a:hover {
+  text-decoration: underline;
+}
+
 main {
   flex: 1;
   padding: 24px 32px 48px;
@@ -722,6 +737,102 @@ select {
 
 .search-again-link:hover {
   text-decoration: underline;
+}
+
+/* Auth pages: login, signup, forgot/reset password */
+
+.auth-page {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+
+.auth-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 28px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-card h1 {
+  margin: 0 0 20px;
+  font-size: 1.4rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-form .field {
+  min-width: 0;
+}
+
+.auth-form input[type='text'],
+.auth-form input[type='password'] {
+  width: 100%;
+}
+
+.field-hint {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+.auth-submit-button {
+  padding: 11px 22px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+
+.auth-submit-button:hover {
+  background: var(--color-primary-dark);
+}
+
+.auth-submit-button:disabled {
+  background: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.auth-submit-link {
+  display: inline-block;
+}
+
+.auth-links {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.auth-links a {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+.auth-links-sep {
+  color: var(--color-border);
 }
 
 @media (max-width: 860px) {
