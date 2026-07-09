@@ -128,6 +128,10 @@ A grid was chosen over a calendar view here: with 5 runs (not weeks/months of da
 
 This repo was git-initialized locally but has no remote configured — push it to a GitHub repo of your own to see CI run.
 
+### Jira auto-transition
+
+`.github/workflows/jira-auto-transition.yml` runs whenever work lands on `main` — either a merged PR or a direct push — and moves the linked Jira issue to **Testing** automatically. It detects the issue key (e.g. `SCRUM-1`) from the PR title/branch name, or from the commit message(s) in a direct push, then calls `scripts/jira-transition.mjs`, a small dependency-free script that looks up the issue's current status, finds the matching transition by name, and applies it (no-op if it's already there). Requires two repo secrets — `JIRA_EMAIL` and `JIRA_API_TOKEN` (an [Atlassian API token](https://id.atlassian.com/manage-profile/security/api-tokens)) — added under Settings → Secrets and variables → Actions. Run it manually with `JIRA_EMAIL=... JIRA_API_TOKEN=... node scripts/jira-transition.mjs --issue SCRUM-1 --status Testing`.
+
 ## API
 
 - `GET /api/health` → `{ status: "ok" }`

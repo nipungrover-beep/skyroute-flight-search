@@ -1,0 +1,50 @@
+name: Jira Auto Transition
+
+# Moves a Jira issue to "Testing" automatically once its work lands on main --
+# either through a merged PR, or a direct push (fast-forward merge) to main.
+# The issue key is auto-detected from the PR title/branch name, or from the
+# commit message(s) introduced by the push (e.g. "... (Jira SCRUM-1)").
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  transition:
+    if: github.event_name == 'push' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Extract Jira issue key
+        id: extract
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            TEXT="${{ github.event.pull_request.title }} ${{ github.head_ref }}"
+          else
+            TEXT="$(git log ${{ github.event.before }}..${{ github.event.after }} --pretty=%B)"
+          fi
+          KEY=$(echo "$TEXT" | grep -oE '[A-Z]+-[0-9]+' | head -n1 || true)
+          if [ -z "$KEY" ]; then
+            echo "No Jira issue key found in PR title/branch or commit messages -- skipping."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Found Jira issue key: $KEY"
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "key=$KEY" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Transition Jira issue to Testing
+        if: steps.extract.outputs.found == 'true'
+        env:
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+        run: node scripts/jira-transition.mjs --issue "${{ steps.extract.outputs.key }}" --status Testing
